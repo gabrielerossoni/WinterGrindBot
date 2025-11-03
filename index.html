@@ -113,7 +113,7 @@
           ? window.Telegram.WebApp
           : null;
       let tgUser = null;
-      
+
       // ============ TELEGRAM CLOUD STORAGE HELPERS ============
       function cloudAvailable() {
         return !!(
@@ -151,6 +151,21 @@
         });
       }
 
+      // ============ TELEGRAM SEND HELPERS ============
+      function sendStateUpdate() {
+        // Invia ogni aggiornamento di stato al bot (solo se siamo dentro Telegram WebApp)
+        if (!tg || !tg.sendData) return;
+        try {
+          tg.sendData(
+            JSON.stringify({
+              type: "stateUpdate",
+              state: state,
+            })
+          );
+        } catch (e) {
+          console.warn("Invio dati fallito", e);
+        }
+      }
       // ============ HELPERS PER INGRESSO DATI DA BOT/URL ============
       function isPlainObject(v) {
         return v && typeof v === "object" && !Array.isArray(v);
@@ -267,8 +282,8 @@
                 : null;
 
             // MainButton invia lo stato JSON al bot
-            tg.MainButton.setText("Invia report");
-            tg.MainButton.show();
+            //tg.MainButton.setText("Invia report");
+            //tg.MainButton.show();
 
             tg.onEvent("mainButtonClicked", () => {
               try {
@@ -309,6 +324,8 @@
         state = { ...state, ...updates };
         saveState();
         render();
+        // invia aggiornamento immediato per ogni cambio di stato
+        sendStateUpdate();
       }
 
       // ============ UTILS ============
@@ -1064,24 +1081,7 @@
             <div class="bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
                 <div class="text-center">
                     <p class="text-sm opacity-90 mb-2">🍕 Punti Sgarro Accumulati</p>
-                    <p class="text-5xl font-bold mb-4">${
-                      state.pointsForSgarro
-                    }</p>
-                    <p class="text-xs opacity-90 mb-4">Ogni settimana da 90+ punti = 1 sgarro</p>
-                    <button onclick="useSgarro()" class="bg-white text-purple-600 font-bold px-6 py-3 rounded-lg w-full active:scale-95 transition-transform ${
-                      state.pointsForSgarro === 0 ? "opacity-50" : ""
-                    }">
-                        ${
-                          state.pointsForSgarro > 0
-                            ? "🍕 Usa uno Sgarro"
-                            : "🔒 Nessuno Sgarro Disponibile"
-                        }
-                    </button>
-                </div>
-            </div>
-            
-            <!-- LEGENDA -->
-            <div class="bg-blue-50 rounded-xl p-4">
+                   
                 <h3 class="font-bold mb-3 text-blue-800">📊 Legenda Colori</h3>
                 <div class="space-y-2 text-sm text-blue-900">
                     <div class="flex items-center gap-2">
