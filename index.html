@@ -114,6 +114,60 @@
           : null;
       let tgUser = null;
 
+      // === CONFIG: sostituisci con il tuo endpoint server se usi la variante server ===
+      const SERVER_URL = "https://tuoserver.com"; // <-- cambia con il tuo server
+
+      // ============ HELPERS PER INGRESSO DATI DA BOT/URL ============
+      function isPlainObject(v) {
+        return v && typeof v === "object" && !Array.isArray(v);
+      }
+
+      function applyIncomingData(payload) {
+        // Merge sicuro: accettiamo solo campi previsti per evitare corruzione dello stato
+        if (!isPlainObject(payload)) return;
+
+        const allowed = {};
+
+        if (isPlainObject(payload.weekData)) {
+          // merge giorno per giorno
+          allowed.weekData = { ...state.weekData };
+          Object.keys(payload.weekData).forEach((d) => {
+            if (isPlainObject(payload.weekData[d])) {
+              allowed.weekData[d] = {
+                ...allowed.weekData[d],
+                ...payload.weekData[d],
+              };
+            }
+          });
+        }
+
+        if (Array.isArray(payload.savedWeights)) {
+          allowed.savedWeights = payload.savedWeights.filter(
+            (w) => w && typeof w.weight === "number"
+          );
+        }
+
+        if (typeof payload.currentWeek === "number") {
+          allowed.currentWeek = payload.currentWeek;
+        }
+        if (typeof payload.streak === "number") {
+          allowed.streak = payload.streak;
+        }
+        if (typeof payload.totalWeeksCompleted === "number") {
+          allowed.totalWeeksCompleted = payload.totalWeeksCompleted;
+        }
+        if (typeof payload.pointsForSgarro === "number") {
+          allowed.pointsForSgarro = payload.pointsForSgarro;
+        }
+        if (Array.isArray(payload.weekHistory)) {
+          allowed.weekHistory = payload.weekHistory;
+        }
+
+        // applica merge
+        state = { ...state, ...allowed };
+        saveState();
+      }
+
       // ============ INIT ============
       async function initApp() {
         db = new WinterGrindDB();
@@ -122,6 +176,22 @@
         const savedData = await db.load("winterGrindState");
         if (savedData) {
           state = { ...state, ...savedData };
+        }
+
+        // ---- supporto: dati passati tramite query param "data" (base64 JSON) ----
+        try {
+          const params = new URLSearchParams(location.search);
+          const dataParam = params.get("data");
+          if (dataParam) {
+            try {
+              const decoded = JSON.parse(atob(decodeURIComponent(dataParam)));
+              applyIncomingData(decoded);
+            } catch (e) {
+              console.warn("Invalid data param payload", e);
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to parse query params", e);
         }
 
         // Telegram WebApp init (se siamo dentro Telegram)
@@ -133,6 +203,29 @@
               tg.initDataUnsafe && tg.initDataUnsafe.user
                 ? tg.initDataUnsafe.user
                 : null;
+
+            // Se abbiamo user id, prova a recuperare dati dal server (variante consigliata)
+            if (tgUser && tgUser.id) {
+              try {
+                const res = await fetch(
+                  `${SERVER_URL.replace(
+                    /\/$/,
+                    ""
+                  )}/userData?user_id=${encodeURIComponent(tgUser.id)}`
+                );
+                if (res.ok) {
+                  const userData = await res.json();
+                  if (userData) {
+                    applyIncomingData(userData);
+                  }
+                } else {
+                  // non fatale: server potrebbe non esistere o rispondere con 404
+                  console.warn("userData fetch non ok", res.status);
+                }
+              } catch (e) {
+                console.warn("fetch userData failed", e);
+              }
+            }
 
             // MainButton invia lo stato JSON al bot
             tg.MainButton.setText("Invia report");
