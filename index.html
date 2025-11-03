@@ -113,9 +113,43 @@
           ? window.Telegram.WebApp
           : null;
       let tgUser = null;
+      
+      // ============ TELEGRAM CLOUD STORAGE HELPERS ============
+      function cloudAvailable() {
+        return !!(
+          window.Telegram &&
+          window.Telegram.WebApp &&
+          window.Telegram.WebApp.CloudStorage
+        );
+      }
 
-      // === CONFIG: sostituisci con il tuo endpoint server se usi la variante server ===
-      const SERVER_URL = "https://tuoserver.com"; // <-- cambia con il tuo server
+      function cloudGetItem(key) {
+        return new Promise((resolve, reject) => {
+          if (!cloudAvailable()) return resolve(null);
+          try {
+            window.Telegram.WebApp.CloudStorage.getItem(key, (err, value) => {
+              if (err) return reject(err);
+              resolve(value);
+            });
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+
+      function cloudSetItem(key, value) {
+        return new Promise((resolve, reject) => {
+          if (!cloudAvailable()) return resolve();
+          try {
+            window.Telegram.WebApp.CloudStorage.setItem(key, value, (err) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
 
       // ============ HELPERS PER INGRESSO DATI DA BOT/URL ============
       function isPlainObject(v) {
@@ -173,9 +207,37 @@
         db = new WinterGrindDB();
         await db.init();
 
-        const savedData = await db.load("winterGrindState");
-        if (savedData) {
-          state = { ...state, ...savedData };
+        // Prova a caricare dallo storage cloud (priorità). Se non disponibile o vuoto,
+        // fallback su IndexedDB locale.
+        let loadedFromCloud = false;
+        if (cloudAvailable()) {
+          try {
+            const cloudRaw = await cloudGetItem("winterGrindState");
+            if (cloudRaw) {
+              try {
+                const cloudState = JSON.parse(cloudRaw);
+                state = { ...state, ...cloudState };
+                loadedFromCloud = true;
+                console.log("Stato caricato da Telegram CloudStorage");
+              } catch (e) {
+                console.warn("Parsing cloud state fallito", e);
+              }
+            }
+          } catch (e) {
+            console.warn("CloudStorage getItem failed", e);
+          }
+        }
+
+        if (!loadedFromCloud) {
+          try {
+            const savedData = await db.load("winterGrindState");
+            if (savedData) {
+              state = { ...state, ...savedData };
+              console.log("Stato caricato da IndexedDB (fallback)");
+            }
+          } catch (e) {
+            console.warn("IndexedDB load failed", e);
+          }
         }
 
         // ---- supporto: dati passati tramite query param "data" (base64 JSON) ----
@@ -204,29 +266,6 @@
                 ? tg.initDataUnsafe.user
                 : null;
 
-            // Se abbiamo user id, prova a recuperare dati dal server (variante consigliata)
-            if (tgUser && tgUser.id) {
-              try {
-                const res = await fetch(
-                  `${SERVER_URL.replace(
-                    /\/$/,
-                    ""
-                  )}/userData?user_id=${encodeURIComponent(tgUser.id)}`
-                );
-                if (res.ok) {
-                  const userData = await res.json();
-                  if (userData) {
-                    applyIncomingData(userData);
-                  }
-                } else {
-                  // non fatale: server potrebbe non esistere o rispondere con 404
-                  console.warn("userData fetch non ok", res.status);
-                }
-              } catch (e) {
-                console.warn("fetch userData failed", e);
-              }
-            }
-
             // MainButton invia lo stato JSON al bot
             tg.MainButton.setText("Invia report");
             tg.MainButton.show();
@@ -247,8 +286,22 @@
       }
 
       function saveState() {
+        // salva su IndexedDB (non bloccante)
         if (db) {
-          db.save("winterGrindState", state);
+          db.save("winterGrindState", state).catch((e) =>
+            console.warn("IndexedDB save failed", e)
+          );
+        }
+
+        // salva su Telegram CloudStorage se disponibile (non bloccante)
+        if (cloudAvailable()) {
+          try {
+            cloudSetItem("winterGrindState", JSON.stringify(state)).catch((e) =>
+              console.warn("CloudStorage save failed", e)
+            );
+          } catch (e) {
+            console.warn("CloudStorage setItem exception", e);
+          }
         }
       }
 
