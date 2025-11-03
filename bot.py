@@ -20,8 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============ CONFIGURAZIONE ============
-BOT_TOKEN = "IL_TUO_TOKEN_QUI"
-MINI_APP_URL = "https://tuoapp.netlify.app"  # Sostituisci con il tuo URL
+BOT_TOKEN = "8518603872:AAHh9fUbvvp5FhDlFjydrVwx8kf0wDxL_2E"
+MINI_APP_URL = "https://wintergrindbot.netlify.app/"  # Sostituisci con il tuo URL
 
 # Database in memoria (in produzione usa un vero database)
 user_data = {}
@@ -397,20 +397,8 @@ Ricorda: La costanza batte il talento. Continua così! 🔥
 
 # ============ MAIN ============
 
-def main():
-    """Avvia il bot"""
-    # Crea applicazione
-    application = Application.builder().token(BOT_TOKEN).build()
-    
-    # Aggiungi handlers
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("app", app_command))
-    application.add_handler(CommandHandler("oggi", oggi_command))
-    application.add_handler(CommandHandler("status", status_command))
-    application.add_handler(CommandHandler("notifiche", notifiche_command))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
-    
+async def post_init(application: Application):
+    """Inizializza scheduler dopo l'avvio del bot"""
     # Configura scheduler promemoria
     scheduler.add_job(
         morning_reminder,
@@ -439,10 +427,30 @@ def main():
     # Avvia scheduler
     scheduler.start()
     
-    logger.info("Bot avviato! Promemoria configurati:")
-    logger.info("- 08:00: Reminder mattutino")
-    logger.info("- 20:00: Reminder serale")
-    logger.info("- Domenica 21:00: Report settimanale")
+    logger.info("✅ Bot avviato! Promemoria configurati:")
+    logger.info("⏰ 08:00 - Reminder mattutino")
+    logger.info("⏰ 20:00 - Reminder serale")
+    logger.info("⏰ Domenica 21:00 - Report settimanale")
+
+
+def main():
+    """Avvia il bot"""
+    # Crea applicazione
+    application = Application.builder().token(BOT_TOKEN).build()
+    
+    # Aggiungi handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("app", app_command))
+    application.add_handler(CommandHandler("oggi", oggi_command))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("notifiche", notifiche_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
+    
+    # Configura post_init per avviare scheduler dopo l'avvio
+    application.post_init = post_init
+    
+    logger.info("🚀 Avvio bot in corso...")
     
     # Avvia bot
     application.run_polling(allowed_updates=Update.ALL_TYPES)
