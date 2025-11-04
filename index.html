@@ -132,6 +132,15 @@
         streak: 0,
         totalWeeksCompleted: 0,
         pointsForSgarro: 0,
+        // Dati personalizzati dal bot
+        userName: 'Atleta',
+        userGoal: 'bulk',
+        macros: {
+          calories: 2200,
+          protein: 180,
+          carbs: 250,
+          fats: 60
+        }
       };
 
       let db;
@@ -406,10 +415,42 @@
 
       window.useSgarro = function () {
         if (state.pointsForSgarro > 0) {
-          alert("Hai usato uno sgarro! Goditelo con moderazione.");
-          setState({ pointsForSgarro: state.pointsForSgarro - 1 });
+          if (tg && tg.showConfirm) {
+            tg.showConfirm(
+              '🍕 Vuoi usare uno sgarro?\n\nPotrai goderti un pasto libero senza sensi di colpa!',
+              (confirmed) => {
+                if (confirmed) {
+                  setState({ pointsForSgarro: state.pointsForSgarro - 1 });
+                  
+                  // Notifica il bot dell'uso dello sgarro
+                  if (tg && tg.sendData) {
+                    tg.sendData(JSON.stringify({
+                      type: 'sgarro_used',
+                      remainingSgarri: state.pointsForSgarro - 1,
+                      timestamp: new Date().toISOString()
+                    }));
+                  }
+                  
+                  if (tg && tg.showAlert) {
+                    tg.showAlert('✅ Sgarro attivato! Goditelo con moderazione 😋');
+                  } else {
+                    alert("✅ Sgarro attivato! Goditelo con moderazione 😋");
+                  }
+                }
+              }
+            );
+          } else {
+            if (confirm('🍕 Vuoi usare uno sgarro?\n\nPotrai goderti un pasto libero senza sensi di colpa!')) {
+              setState({ pointsForSgarro: state.pointsForSgarro - 1 });
+              alert("✅ Sgarro attivato! Goditelo con moderazione 😋");
+            }
+          }
         } else {
-          alert("Non hai punti sgarro disponibili.");
+          if (tg && tg.showAlert) {
+            tg.showAlert('❌ Non hai punti sgarro disponibili.\n\nOttieni 90+ punti in una settimana per guadagnarne uno!');
+          } else {
+            alert("❌ Non hai punti sgarro disponibili.\n\nOttieni 90+ punti in una settimana per guadagnarne uno!");
+          }
         }
       };
 
