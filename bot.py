@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # ============ CONFIGURAZIONE ============
 BOT_TOKEN = "8518603872:AAHh9fUbvvp5FhDlFjydrVwx8kf0wDxL_2E"
-MINI_APP_URL = "https://wintergrindbot.netlify.app/"  # Sostituisci con il tuo URL
+MINI_APP_URL = "https://gabrielerossoni.github.io/WinterGrindBot/"  # Sostituisci con il tuo URL
 
 # Database in memoria (in produzione usa un vero database)
 user_data = {}
