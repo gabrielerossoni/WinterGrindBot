@@ -26,8 +26,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # ============ CONFIGURAZIONE ============
-BOT_TOKEN = "8518603872:AAHh9fUbvvp5FhDlFjydrVwx8kf0wDxL_2E"  # INSERISCI IL TUO TOKEN
-MINI_APP_URL = "https://gabrielerossoni.github.io/WinterGrindBot/"  # INSERISCI IL TUO URL
+BOT_TOKEN = "7919341811:AAGLWkKXCsqYCFqNmD_L_p4pNE3lHwVmk-o"  # INSERISCI IL TUO TOKEN
+MINI_APP_URL = "https://wintergrind.netlify.app"  # INSERISCI IL TUO URL
 
 # Stati per ConversationHandler
 SETUP_NAME, SETUP_WEIGHT, SETUP_HEIGHT, SETUP_AGE, SETUP_GOAL, SETUP_ACTIVITY = range(6)
@@ -991,7 +991,7 @@ def main():
     """Avvia il bot"""
     application = Application.builder().token(BOT_TOKEN).build()
     
-    # Setup conversation handler
+    # Setup conversation handler CON personalizzazione allenamenti
     setup_handler = ConversationHandler(
         entry_points=[CommandHandler('setup', setup_start)],
         states={
@@ -1005,8 +1005,27 @@ def main():
         fallbacks=[CommandHandler('cancel', setup_cancel)],
     )
     
+    # Conversation handler per personalizzazione allenamenti
+    workouts_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler('personalizza', personalizza_command),
+            CallbackQueryHandler(workouts_choice, pattern='^workouts_')
+        ],
+        states={
+            WORKOUT_MONDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_monday)],
+            WORKOUT_TUESDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_tuesday)],
+            WORKOUT_WEDNESDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_wednesday)],
+            WORKOUT_THURSDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_thursday)],
+            WORKOUT_FRIDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_friday)],
+            WORKOUT_SATURDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_saturday)],
+            WORKOUT_SUNDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, workout_sunday)],
+        },
+        fallbacks=[CommandHandler('cancel', setup_cancel)],
+    )
+    
     # Aggiungi handlers
     application.add_handler(setup_handler)
+    application.add_handler(workouts_handler)
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CommandHandler("app", app_command))
