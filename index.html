@@ -219,6 +219,90 @@
           }
         }
 
+        // ---- LEGGI DATI DAL BOT VIA URL ----
+        try {
+          const params = new URLSearchParams(location.search);
+          const dataParam = params.get("data");
+          if (dataParam) {
+            console.log('📦 Dati ricevuti dal bot');
+            try {
+              const decoded = JSON.parse(atob(decodeURIComponent(dataParam)));
+              console.log('📊 Dati decodificati:', decoded);
+              
+              // Applica i dati ricevuti (merge con stato esistente)
+              if (decoded.macros) {
+                state.macros = { ...state.macros, ...decoded.macros };
+                console.log('✅ Macro aggiornate:', state.macros);
+              }
+              if (decoded.userName) {
+                state.userName = decoded.userName;
+                console.log('✅ Nome utente:', state.userName);
+              }
+              if (decoded.goal) {
+                state.userGoal = decoded.goal;
+                console.log('✅ Obiettivo:', state.userGoal);
+              }
+              
+              // Applica altri dati (settimana, sgarro, peso, ecc.)
+              if (decoded.currentWeek !== undefined) state.currentWeek = decoded.currentWeek;
+              if (decoded.pointsForSgarro !== undefined) state.pointsForSgarro = decoded.pointsForSgarro;
+              if (decoded.streak !== undefined) state.streak = decoded.streak;
+              if (decoded.weekData) state.weekData = { ...state.weekData, ...decoded.weekData };
+              if (decoded.savedWeights && Array.isArray(decoded.savedWeights)) {
+                // Aggiungi ai pesi esistenti (non sovrascrivere)
+                state.savedWeights = [...state.savedWeights, ...decoded.savedWeights];
+              }
+              
+            } catch (e) {
+              console.warn('⚠️ Errore parsing dati dal bot:', e);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Errore lettura parametri URL:', e);
+        }
+
+        // ---- LEGGI DATI DAL BOT VIA URL ----
+        try {
+          const params = new URLSearchParams(location.search);
+          const dataParam = params.get("data");
+          if (dataParam) {
+            console.log('📦 Dati ricevuti dal bot');
+            try {
+              const decoded = JSON.parse(atob(decodeURIComponent(dataParam)));
+              console.log('📊 Dati decodificati:', decoded);
+              
+              // Applica i dati ricevuti (merge con stato esistente)
+              if (decoded.macros) {
+                state.macros = { ...state.macros, ...decoded.macros };
+                console.log('✅ Macro aggiornate:', state.macros);
+              }
+              if (decoded.userName) {
+                state.userName = decoded.userName;
+                console.log('✅ Nome utente:', state.userName);
+              }
+              if (decoded.goal) {
+                state.userGoal = decoded.goal;
+                console.log('✅ Obiettivo:', state.userGoal);
+              }
+              
+              // Applica altri dati (settimana, sgarro, peso, ecc.)
+              if (decoded.currentWeek !== undefined) state.currentWeek = decoded.currentWeek;
+              if (decoded.pointsForSgarro !== undefined) state.pointsForSgarro = decoded.pointsForSgarro;
+              if (decoded.streak !== undefined) state.streak = decoded.streak;
+              if (decoded.weekData) state.weekData = { ...state.weekData, ...decoded.weekData };
+              if (decoded.savedWeights && Array.isArray(decoded.savedWeights)) {
+                // Aggiungi ai pesi esistenti (non sovrascrivere)
+                state.savedWeights = [...state.savedWeights, ...decoded.savedWeights];
+              }
+              
+            } catch (e) {
+              console.warn('⚠️ Errore parsing dati dal bot:', e);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Errore lettura parametri URL:', e);
+        }
+
         // PROVA A CARICARE DA CLOUD STORAGE
         if (cloudAvailable()) {
           console.log('☁️ Cloud Storage disponibile, tentativo di caricamento...');
@@ -229,7 +313,15 @@
             
             if (cloudRaw) {
               const cloudState = JSON.parse(cloudRaw);
-              state = { ...state, ...cloudState };
+              // Merge mantenendo i dati personalizzati appena ricevuti
+              state = { 
+                ...state, 
+                ...cloudState,
+                // Mantieni macro, userName, userGoal se appena ricevuti dal bot
+                macros: state.macros,
+                userName: state.userName,
+                userGoal: state.userGoal
+              };
               useCloudStorage = true;
               updateSyncStatus('cloud', 'Sincronizzato');
               console.log('✅ Stato caricato da Cloud Storage');
@@ -471,13 +563,26 @@
         const diets = Object.values(state.weekData).filter((d) => d.diet).length;
         const cardio = Object.values(state.weekData).filter((d) => d.cardio).length;
 
+        // Emoji obiettivo
+        const goalEmoji = {
+          'bulk': '💪',
+          'cut': '🔥',
+          'maintain': '⚖️'
+        };
+        const goalName = {
+          'bulk': 'Massa',
+          'cut': 'Definizione',
+          'maintain': 'Mantenimento'
+        };
+
         return `
           <div class="space-y-4">
             <div class="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
               <div class="flex items-center justify-between mb-4">
                 <div>
                   <h1 class="text-3xl font-bold">Winter Grind 2025</h1>
-                  <p class="text-orange-100">${tgUser ? tgUser.first_name : 'Gabriele'} - Settimana ${state.currentWeek}</p>
+                  <p class="text-orange-100">${state.userName} - Settimana ${state.currentWeek}</p>
+                  <p class="text-xs text-orange-200 mt-1">${goalEmoji[state.userGoal] || '💪'} Obiettivo: ${goalName[state.userGoal] || 'Massa'}</p>
                 </div>
                 ${icons.flame}
               </div>
@@ -809,13 +914,14 @@
             <h2 class="text-2xl font-bold mb-4">Piano Alimentare</h2>
             
             <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg mb-4">
-              <h3 class="font-bold text-lg mb-2">Target Giornaliero</h3>
+              <h3 class="font-bold text-lg mb-2">🎯 I Tuoi Target Giornalieri</h3>
               <div class="grid grid-cols-3 gap-3 text-center">
-                <div><p class="text-2xl font-bold">180g</p><p class="text-xs text-green-100">Proteine</p></div>
-                <div><p class="text-2xl font-bold">250g</p><p class="text-xs text-green-100">Carboidrati</p></div>
-                <div><p class="text-2xl font-bold">60g</p><p class="text-xs text-green-100">Grassi</p></div>
+                <div><p class="text-2xl font-bold">${state.macros.protein}g</p><p class="text-xs text-green-100">Proteine</p></div>
+                <div><p class="text-2xl font-bold">${state.macros.carbs}g</p><p class="text-xs text-green-100">Carboidrati</p></div>
+                <div><p class="text-2xl font-bold">${state.macros.fats}g</p><p class="text-xs text-green-100">Grassi</p></div>
               </div>
-              <p class="text-center mt-3 text-sm">~2200 kcal/giorno</p>
+              <p class="text-center mt-3 text-sm font-bold">~${state.macros.calories} kcal/giorno</p>
+              <p class="text-center text-xs text-green-100 mt-1">Personalizzato per il tuo obiettivo ${state.userGoal === 'bulk' ? '💪 Massa' : state.userGoal === 'cut' ? '🔥 Definizione' : '⚖️ Mantenimento'}</p>
             </div>
         `;
 
@@ -840,8 +946,13 @@
               <p>✓ Bevi 2.5-3L acqua al giorno</p>
               <p>✓ 80% pulito, 20% flessibile weekend</p>
               <p>✓ Pesati solo lunedì mattina a digiuno</p>
-              <p>✓ Obiettivo: +0.3-0.5kg al mese (massa pulita)</p>
+              <p>✓ Obiettivo: ${state.userGoal === 'bulk' ? '+0.3-0.5kg al mese' : state.userGoal === 'cut' ? '-0.5-0.7kg a settimana' : 'mantieni il peso stabile'}</p>
             </div>
+          </div>
+          
+          <div class="bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
+            <p class="text-xs text-orange-800 font-semibold mb-1">📱 Aggiorna i tuoi macro</p>
+            <p class="text-xs text-orange-700">Usa <code class="bg-orange-200 px-1 rounded">/setup</code> nel bot per ricalcolare macro in base a peso/obiettivo aggiornati!</p>
           </div>
         </div>
         `;
