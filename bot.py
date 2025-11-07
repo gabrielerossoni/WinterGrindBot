@@ -11,6 +11,7 @@ Deploy Gratis su: Railway.app o Render.com
 import json
 import logging
 import os
+from dotenv import load_dotenv
 import base64
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
@@ -25,6 +26,9 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+
+# Carica le variabili d'ambiente dal file .env
+load_dotenv()
 
 # ============ CONFIGURAZIONE ============
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -347,7 +351,6 @@ async def setup_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ============ COMANDI PRINCIPALI ============
-
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mostra il menu completo"""
     message = """
