@@ -10,6 +10,7 @@ Deploy Gratis su: Railway.app o Render.com
 
 import json
 import logging
+import os
 import base64
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
@@ -26,8 +27,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # ============ CONFIGURAZIONE ============
-BOT_TOKEN = "8518603872:AAHh9fUbvvp5FhDlFjydrVwx8kf0wDxL_2E"  # INSERISCI IL TUO TOKEN
-MINI_APP_URL = "https://gabrielerossoni.github.io/WinterGrindBot/"  # INSERISCI IL TUO URL
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MINI_APP_URL = os.getenv("MINI_APP_URL")
 
 # Stati per ConversationHandler
 SETUP_NAME, SETUP_WEIGHT, SETUP_HEIGHT, SETUP_AGE, SETUP_GOAL, SETUP_ACTIVITY = range(6)
