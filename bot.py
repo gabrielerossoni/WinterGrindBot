@@ -26,8 +26,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # ============ CONFIGURAZIONE ============
-BOT_TOKEN = "8518603872:AAHh9fUbvvp5FhDlFjydrVwx8kf0wDxL_2E"  # INSERISCI IL TUO TOKEN
-MINI_APP_URL = "https://gabrielerossoni.github.io/WinterGrindBot/"  # INSERISCI IL TUO URL
+#BOT_TOKEN = ""  # INSERISCI IL TUO TOKEN
+#MINI_APP_URL = "  # INSERISCI IL TUO URL
 
 # Stati per ConversationHandler
 SETUP_NAME, SETUP_WEIGHT, SETUP_HEIGHT, SETUP_AGE, SETUP_GOAL, SETUP_ACTIVITY = range(6)
