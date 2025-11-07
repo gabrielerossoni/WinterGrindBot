@@ -670,7 +670,7 @@
             <div class="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
               <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h1 class="text-3xl font-bold">Winter Grind 2025</h1>
+                  <h1 class="text-3xl font-bold">Winter Grind</h1>
                   <p class="text-orange-100">${state.userName} - Settimana ${
           state.currentWeek
         }</p>
@@ -782,9 +782,9 @@
           const workout = workoutSchedule[day];
           const isRestDay = day === "sunday";
           const pts =
-            (data.workout ? 15 : 0) +
+            (data.workout ? 12 : 0) +
             (data.cardio ? 10 : 0) +
-            (data.diet ? 3 : 0);
+            (data.diet ? 5 : 0);
 
           html += `
             <div class="bg-white rounded-xl p-4 shadow">

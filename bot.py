@@ -26,6 +26,8 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+import sys
+from telegram.error import Conflict
 
 # Carica le variabili d'ambiente dal file .env
 load_dotenv()
@@ -141,11 +143,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         await update.message.reply_text(
-            f"🔥 *BENVENUTO IN WINTER GRIND 2025* 🔥\n\n"
-            f"Ciao {user.first_name}!\n\n"
-            f"Prima di iniziare, configuriamo il tuo profilo personalizzato.\n\n"
-            f"Usa /setup per iniziare la configurazione! 💪",
-            parse_mode='Markdown'
+            f"🔥 <b>BENVENUTO IN WINTER GRIND 2025</b> 🔥\n\n"
+    f"Ciao {user.first_name}!\n\n"
+    f"Prima di iniziare, configuriamo il tuo profilo personalizzato.\n\n"
+    f"Usa /setup per iniziare la configurazione! 💪",
+    parse_mode='HTML'
         )
 
 
@@ -993,6 +995,12 @@ async def post_init(application: Application):
 
 def main():
     """Avvia il bot"""
+    # Controllo token prima di tutto
+    if not BOT_TOKEN:
+        logger.error("BOT_TOKEN non impostato. Crea un file .env con BOT_TOKEN=<il_tuo_token>")
+        print("Errore: BOT_TOKEN non impostato. Controlla il file .env e rilancia.")
+        sys.exit(1)
+
     application = Application.builder().token(BOT_TOKEN).build()
     
     # Setup conversation handler
@@ -1043,7 +1051,34 @@ def main():
     application.post_init = post_init
     
     logger.info("🚀 Avvio bot in corso...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    try:
+        # Esegui il polling; intercetta conflitti dovuti a un'altra istanza attiva
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Conflict as e:
+        logger.error("❌ Conflict getUpdates: esiste un'altra istanza del bot (o un altro processo che usa getUpdates). Dettaglio: %s", e)
+        print("Conflict: terminated by other getUpdates request; assicurati che non ci siano altre istanze del bot in esecuzione e riprova.")
+        # Prova a pulire lo scheduler se attivo
+        try:
+            scheduler.shutdown(wait=False)
+        except Exception:
+            pass
+        sys.exit(1)
+    except KeyboardInterrupt:
+        logger.info("Interruzione manuale rilevata. Arresto in corso...")
+        try:
+            scheduler.shutdown(wait=False)
+        except Exception:
+            pass
+        application.stop()
+        sys.exit(0)
+    except Exception as e:
+        logger.exception("Errore non gestito durante run_polling: %s", e)
+        try:
+            scheduler.shutdown(wait=False)
+        except Exception:
+            pass
+        sys.exit(1)
 
 
 if __name__ == '__main__':
