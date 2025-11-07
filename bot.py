@@ -931,9 +931,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 4️⃣ Accumula punti e guadagna sgarri
 
 *📊 Sistema Punti:*
-• Palestra = 15 punti
+• Palestra = 12 punti
 • Cardio = 10 punti
-• Dieta = 3 punti
+• Dieta = 5 punti
 • 90+ punti = 1 sgarro 🍕
 
 *🔔 Notifiche Automatiche:*
